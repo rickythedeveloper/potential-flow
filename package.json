@@ -5,8 +5,8 @@
   "private": true,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "webpack && copyfiles -u 1 src/index.html build",
-    "dev-watch": "nodemon --exec npm run dev --watch src --ext .ts,.html"
+    "build": "webpack && copyfiles -u 1 src/index.html build",
+    "build-watch": "nodemon --exec npm run build --watch src --ext .ts,.html"
   },
   "keywords": [],
   "author": "",
