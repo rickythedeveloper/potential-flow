@@ -55,21 +55,17 @@ const uniformVelocityFunction: VelocityFunction = (primitive, position) => Vecto
 )
 
 const primitives: FlowPrimitive[] = [
-	{primitiveType: FlowPrimitiveType.source, strength: 2, position: new Vector2(0, 0), direction: 0},
-	{primitiveType: FlowPrimitiveType.sink, strength: 2, position: new Vector2(1, 0), direction: 0},
+	{primitiveType: FlowPrimitiveType.source, strength: 5, position: new Vector2(0, 0), direction: 0},
+	{primitiveType: FlowPrimitiveType.sink, strength: 5, position: new Vector2(1, 0), direction: 0},
 	{primitiveType: FlowPrimitiveType.uniform, strength: 1, position: new Vector2(0, 0), direction: 0}
 ]
 
 const starts: Vector2[] = []
-for (let x = -1; x <= -0.9; x += 0.5) {
-	for (let y = -2; y < 2; y += 0.05) {
-		starts.push(new Vector2(x, y))
-	}
-}
 
 const sketch = (p: p5) => {
 	const scale = 1/100
 	const particlePositions: Vector2[] = []
+	const fps = 60
 	p.setup = () => {
 		p.createCanvas(500, 500)
 	}
@@ -81,12 +77,19 @@ const sketch = (p: p5) => {
 		p.stroke(255, 0, 0)
 		starts.forEach(s => p.circle(...positionWorldToCanvas(s).asArray, 5))
 		if (p.frameCount % 5 === 0) spawnNewParticles()
-		rollForward(0.05)
-		cleanParticles(-5, 5, -5, 5)
+		rollForward(0.01)
+		cleanParticles(-3, 3, -3, 3)
+		removePartivlesAroundSinks()
 		p.stroke(0)
 		particlePositions.forEach(pos => {
 			p.circle(...positionWorldToCanvas(pos).asArray, 2)
 		})
+
+		if (p.frameCount % 60 === 0) console.log(particlePositions.length);
+	}
+
+	p.mousePressed = () => {
+		starts.push(positionCanvasToWorld(new Vector2(p.mouseX, p.mouseY)))
 	}
 
 	const spawnNewParticles = () => {
@@ -110,6 +113,21 @@ const sketch = (p: p5) => {
 			const position = particlePositions[i]
 			if (position.x < xmin || position.x > xmax || position.y < ymin || position.y > ymax) {
 				particlePositions.splice(i, 1)
+			}
+		}
+	}
+
+	const removePartivlesAroundSinks = () => {
+		const lastIndex = particlePositions.length - 1
+		for (let i = lastIndex; i >= 0; i--) {
+			const position = particlePositions[i]
+			for (let j = 0; j < primitives.length; j++) {
+				const primitive = primitives[j]
+				if (primitive.primitiveType === FlowPrimitiveType.sink) {
+					if (Vector2.subtract(position, primitive.position).magnitude < Math.sqrt((primitive.strength)/(2*Math.PI*fps)) * 2) {
+						particlePositions.splice(i, 1)
+					}
+				}
 			}
 		}
 	}
@@ -138,12 +156,12 @@ const sketch = (p: p5) => {
 		}
 	}
 
-	// const positionCanvasToWorld = (pos: Vector2) => {
-	// 	return new Vector2(
-	// 		(pos.x - p.width/2) * scale,
-	// 		(pos.y - p.height/2) * scale
-	// 	)
-	// }
+	const positionCanvasToWorld = (pos: Vector2) => {
+		return new Vector2(
+			(pos.x - p.width/2) * scale,
+			(pos.y - p.height/2) * scale
+		)
+	}
 	
 	const positionWorldToCanvas = (pos: Vector2) => {
 		return new Vector2(
