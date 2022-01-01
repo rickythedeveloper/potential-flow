@@ -62,22 +62,64 @@ const primitives: FlowPrimitive[] = [
 
 const starts: Vector2[] = []
 for (let x = -1; x <= -0.9; x += 0.5) {
-	for (let y = -2; y < 2; y += 0.1) {
+	for (let y = -2; y < 2; y += 0.05) {
 		starts.push(new Vector2(x, y))
 	}
 }
 
 const sketch = (p: p5) => {
 	const scale = 1/100
+	const particlePositions: Vector2[] = []
 	p.setup = () => {
 		p.createCanvas(500, 500)
-
-		starts.forEach(s => {
-			p.stroke(255, 0, 0)
-			p.circle(...positionWorldToCanvas(s).asArray, 10)
-			p.stroke(0)
-			drawStreamline(s, 0.1, 1000)
+	}
+	
+	p.draw = () => {
+		p.background(255)
+		p.stroke(0)
+		p.rect(0, 0, p.width, p.height)
+		p.stroke(255, 0, 0)
+		starts.forEach(s => p.circle(...positionWorldToCanvas(s).asArray, 5))
+		if (p.frameCount % 5 === 0) spawnNewParticles()
+		rollForward(0.05)
+		cleanParticles(-5, 5, -5, 5)
+		p.stroke(0)
+		particlePositions.forEach(pos => {
+			p.circle(...positionWorldToCanvas(pos).asArray, 2)
 		})
+	}
+
+	const spawnNewParticles = () => {
+		starts.forEach(s => {
+			particlePositions.push(s)
+		})
+	}
+
+	const rollForward = (dt: number) => {
+		for (let i = 0; i < particlePositions.length; i++) {
+			const position = particlePositions[i]
+			const velocity = getVelocityAtPosition(position)
+			const newPosition = Vector2.add(position, Vector2.multiply(dt, velocity))
+			particlePositions[i] = newPosition
+		}
+	}
+
+	const cleanParticles = (xmin: number, xmax: number, ymin: number, ymax: number) => {
+		const lastIndex = particlePositions.length - 1
+		for (let i = lastIndex; i >= 0; i--) {
+			const position = particlePositions[i]
+			if (position.x < xmin || position.x > xmax || position.y < ymin || position.y > ymax) {
+				particlePositions.splice(i, 1)
+			}
+		}
+	}
+
+	const getVelocityAtPosition = (position: Vector2): Vector2 => {
+		const velocity = new Vector2(0, 0)
+		for (let p = 0; p < primitives.length; p++) {
+			velocity.add(velocityFunction(primitives[p], position))
+		}
+		return velocity
 	}
 	
 	const drawStreamline = (position: Vector2, dt=0.01, tMax=100, maxDD=0.01) => {
